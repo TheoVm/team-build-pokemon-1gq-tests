@@ -110,4 +110,80 @@ describe('Testes de Integração do Serviço de Times', () => {
       expect(result[0].name).toBe('Meu Time')
     })
   })
+
+  describe('atualizarTime', () => {
+    it('deve atualizar time e pokemon', async () => {
+      const mockUser = { id: 'user-123' }
+      supabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+
+      const mockUpdatedTeam = { id: 'team-123', name: 'Time Atualizado' }
+
+      supabase.from.mockReturnValueOnce({
+        update: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              select: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({ data: mockUpdatedTeam, error: null })
+              })
+            })
+          })
+        })
+      })
+
+      supabase.from.mockReturnValueOnce({
+        delete: jest.fn().mockReturnValue({
+          eq: jest.fn().mockResolvedValue({ error: null })
+        })
+      })
+
+      supabase.from.mockReturnValueOnce({
+        insert: jest.fn().mockResolvedValue({ error: null })
+      })
+
+      const pokemonList = [
+        {
+          id: 1,
+          name: 'bulbasaur',
+          level: 50
+        }
+      ]
+
+      const result = await teamService.updateTeam('team-123', 'Time Atualizado', pokemonList)
+
+      expect(result).toEqual(mockUpdatedTeam)
+    })
+  })
+
+  describe('deletarTime', () => {
+    it('deve deletar time e pokemon', async () => {
+      const mockUser = { id: 'user-123' }
+      supabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null })
+
+      supabase.from.mockReturnValueOnce({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'team-123' }, error: null })
+            })
+          })
+        })
+      })
+
+      supabase.from.mockReturnValueOnce({
+        delete: jest.fn().mockReturnValue({
+          eq: jest.fn().mockResolvedValue({ error: null })
+        })
+      })
+
+      supabase.from.mockReturnValueOnce({
+        delete: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            eq: jest.fn().mockResolvedValue({ error: null })
+          })
+        })
+      })
+
+      await expect(teamService.deleteTeam('team-123')).resolves.not.toThrow()
+    })
+  })
 })
