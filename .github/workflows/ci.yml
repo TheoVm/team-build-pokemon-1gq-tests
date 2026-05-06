@@ -22,15 +22,19 @@ jobs:
 
       - name: Instalar dependências
         run: npm install
+        working-directory: poketeams
 
       - name: Rodar lint
         run: npm run lint --if-present
+        working-directory: poketeams
 
       - name: Rodar testes
         run: npm test
+        working-directory: poketeams
 
       - name: Build do projeto
         run: npm run build
+        working-directory: poketeams
 
       - name: Pipeline finalizado
         run: echo "CI executado com sucesso!"
