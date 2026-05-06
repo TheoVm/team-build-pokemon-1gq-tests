@@ -36,6 +36,9 @@ jobs:
       - name: Build do projeto
         run: npm run build
         working-directory: poketeams
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://mock.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: mock-key
 
       - name: Pipeline finalizado
         run: echo "CI executado com sucesso!"
