@@ -1,0 +1,36 @@
+name: CI - PokéTeams
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Rodar lint
+        run: npm run lint --if-present
+
+      - name: Rodar testes
+        run: npm test
+
+      - name: Build do projeto
+        run: npm run build
+
+      - name: Pipeline finalizado
+        run: echo "CI executado com sucesso!"
