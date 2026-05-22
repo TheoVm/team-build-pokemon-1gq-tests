@@ -1,69 +1,5 @@
 import { supabase } from './supabase'
-
-const DEFAULT_LEVEL = 50
-const DEFAULT_IVS = Object.freeze({
-  hp: 31,
-  attack: 31,
-  defense: 31,
-  specialAttack: 31,
-  specialDefense: 31,
-  speed: 31
-})
-const DEFAULT_EVS = Object.freeze({
-  hp: 0,
-  attack: 0,
-  defense: 0,
-  specialAttack: 0,
-  specialDefense: 0,
-  speed: 0
-})
-
-const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
-
-const toNumber = (value, fallback) => {
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : fallback
-}
-
-function normalizeMoves(moves) {
-  const source = Array.isArray(moves) ? moves : []
-  return Array.from({ length: 4 }, (_, index) => {
-    const move = source[index]
-    return typeof move === 'string' ? move : ''
-  })
-}
-
-function normalizeStatSpread(spread, defaults, min, max) {
-  const source = spread && typeof spread === 'object' ? spread : {}
-
-  return {
-    hp: clamp(toNumber(source.hp, defaults.hp), min, max),
-    attack: clamp(toNumber(source.attack ?? source.atk, defaults.attack), min, max),
-    defense: clamp(toNumber(source.defense ?? source.def, defaults.defense), min, max),
-    specialAttack: clamp(
-      toNumber(source.specialAttack ?? source.spAtk ?? source.spa, defaults.specialAttack),
-      min,
-      max
-    ),
-    specialDefense: clamp(
-      toNumber(source.specialDefense ?? source.spDef ?? source.spd, defaults.specialDefense),
-      min,
-      max
-    ),
-    speed: clamp(toNumber(source.speed ?? source.spe, defaults.speed), min, max)
-  }
-}
-
-function normalizePokemonConfig(pokemon = {}) {
-  return {
-    level: clamp(toNumber(pokemon.level, DEFAULT_LEVEL), 1, 100),
-    ivs: normalizeStatSpread(pokemon.ivs, DEFAULT_IVS, 0, 31),
-    evs: normalizeStatSpread(pokemon.evs, DEFAULT_EVS, 0, 255),
-    moves: normalizeMoves(pokemon.moves),
-    ability: typeof pokemon.ability === 'string' ? pokemon.ability : '',
-    item: typeof pokemon.item === 'string' ? pokemon.item : ''
-  }
-}
+import { normalizePokemonConfig } from './pokemonConfig'
 
 async function getRequiredUser() {
   const {
@@ -97,6 +33,28 @@ function mapPokemonInsert(teamId, pokemon) {
   }
 }
 
+async function insertTeamPokemon(teamId, pokemonList) {
+  const pokemonInserts = pokemonList.map((pokemon) => mapPokemonInsert(teamId, pokemon))
+
+  if (pokemonInserts.length === 0) return
+
+  const { error } = await supabase
+    .from('team_pokemon')
+    .insert(pokemonInserts)
+
+  if (error) throw error
+}
+
+function normalizeStoredTeam(team) {
+  return {
+    ...team,
+    team_pokemon: (team.team_pokemon || []).filter(Boolean).map((pokemon) => ({
+      ...pokemon,
+      ...normalizePokemonConfig(pokemon)
+    }))
+  }
+}
+
 export const teamService = {
   // Create a new team
   async createTeam(teamName, pokemonList) {
@@ -115,16 +73,7 @@ export const teamService = {
 
     if (error) throw error
 
-    const teamId = data.id
-    const pokemonInserts = pokemonList.map((pokemon) => mapPokemonInsert(teamId, pokemon))
-
-    if (pokemonInserts.length > 0) {
-      const { error: pokemonError } = await supabase
-        .from('team_pokemon')
-        .insert(pokemonInserts)
-
-      if (pokemonError) throw pokemonError
-    }
+    await insertTeamPokemon(data.id, pokemonList)
 
     return data
   },
@@ -162,21 +111,7 @@ export const teamService = {
 
     if (error) throw error
 
-    return (data || []).map((team) => ({
-      ...team,
-      team_pokemon: (team.team_pokemon || []).filter(Boolean).map((pokemon) => {
-        const normalizedConfig = normalizePokemonConfig(pokemon)
-        return {
-          ...pokemon,
-          level: normalizedConfig.level,
-          ivs: normalizedConfig.ivs,
-          evs: normalizedConfig.evs,
-          moves: normalizedConfig.moves,
-          ability: normalizedConfig.ability,
-          item: normalizedConfig.item
-        }
-      })
-    }))
+    return (data || []).map(normalizeStoredTeam)
   },
 
   // Update a team
@@ -202,16 +137,7 @@ export const teamService = {
 
     if (deleteError) throw deleteError
 
-    // 3) Insert the updated pokemon list
-    const pokemonInserts = pokemonList.map((pokemon) => mapPokemonInsert(teamId, pokemon))
-
-    if (pokemonInserts.length > 0) {
-      const { error: pokemonError } = await supabase
-        .from('team_pokemon')
-        .insert(pokemonInserts)
-
-      if (pokemonError) throw pokemonError
-    }
+    await insertTeamPokemon(teamId, pokemonList)
 
     return updatedTeam
   },
