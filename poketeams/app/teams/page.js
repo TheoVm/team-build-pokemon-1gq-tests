@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { teamService } from '../../lib/teamService';
 import { authService } from '../../lib/authService';
+import { calculateEffectiveStats, getPokemonSpriteUrl } from '../../lib/pokemonConfig';
 import styles from './page.module.css';
 import BackToHome from '../components/BackToHome';
 
@@ -111,6 +112,8 @@ export default function Teams() {
   };
 
   const getTeamPokemonCount = (team) => team.team_pokemon.filter(Boolean).length;
+  const getTeamPokemon = (team) => team.team_pokemon.filter(Boolean);
+  const getPokemonImage = (pokemon) => pokemon.image_url || getPokemonSpriteUrl(pokemon.pokemon_id);
 
   const getStatLabel = (stat) => {
     const statLabels = {
@@ -125,38 +128,16 @@ export default function Teams() {
     return statLabels[stat] || stat;
   };
 
-  const calculateEffectiveStats = (
-    baseStats,
-    level = 50,
-    ivs = {
-      hp: 31,
-      attack: 31,
-      defense: 31,
-      specialAttack: 31,
-      specialDefense: 31,
-      speed: 31
-    },
-    evs = {
-      hp: 0,
-      attack: 0,
-      defense: 0,
-      specialAttack: 0,
-      specialDefense: 0,
-      speed: 0
+  const handleModalBackdropClick = (event) => {
+    if (event.target === event.currentTarget) {
+      handleCloseView();
     }
-  ) => {
-    const effective = {};
-    for (const stat in baseStats) {
-      const base = baseStats[stat];
-      const iv = ivs[stat] || 0;
-      const ev = evs[stat] || 0;
-      if (stat === 'hp') {
-        effective[stat] = Math.floor(((base + iv + Math.floor(ev / 4)) * 2 + 100) * level / 100) + level + 10;
-      } else {
-        effective[stat] = Math.floor(((base + iv + Math.floor(ev / 4)) * 2) * level / 100) + 5;
-      }
+  };
+
+  const handleModalKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      handleCloseView();
     }
-    return effective;
   };
 
   if (authLoading) {
@@ -227,25 +208,21 @@ export default function Teams() {
                 <div className={styles.teamDivider} />
 
                 <div className={styles.teamPreview}>
-                  {team.team_pokemon.slice(0, 6).map((pokemon, index) => (
+                  {getTeamPokemon(team).slice(0, 6).map((pokemon) => (
                     <div
-                      key={index}
-                      className={`${styles.pokemonSlot} ${pokemon ? styles.pokemonFilled : styles.pokemonEmpty}`}
-                      title={pokemon ? pokemon.name : 'Slot vazio'}
-                      data-name={pokemon ? pokemon.name : ''}
+                      key={pokemon.id}
+                      className={`${styles.pokemonSlot} ${styles.pokemonFilled}`}
+                      title={pokemon.name}
+                      data-name={pokemon.name}
                     >
-                      {pokemon ? (
-                        <div className={styles.pokemonMini}>
-                          <img
-                            src={pokemon.image_url || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.pokemon_id}.png`}
-                            alt={pokemon.name}
-                            className={styles.pokemonImage}
-                          />
-                          <span className={styles.pokemonName}>{pokemon.name}</span>
-                        </div>
-                      ) : (
-                        <div className={styles.emptySlot}>Vazio</div>
-                      )}
+                      <div className={styles.pokemonMini}>
+                        <img
+                          src={getPokemonImage(pokemon)}
+                          alt={pokemon.name}
+                          className={styles.pokemonImage}
+                        />
+                        <span className={styles.pokemonName}>{pokemon.name}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -280,11 +257,16 @@ export default function Teams() {
       </div>
 
       {selectedTeam && (
-        <div className={styles.modalOverlay} onClick={handleCloseView}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={styles.modalOverlay}
+          onMouseDown={handleModalBackdropClick}
+          onKeyDown={handleModalKeyDown}
+          role="presentation"
+        >
+          <div className={styles.modalContent} role="dialog" aria-modal="true" aria-labelledby="team-details-title">
             <div className={styles.modalHeader}>
               <div className={styles.modalTitleGroup}>
-                <h2>{selectedTeam.name}</h2>
+                <h2 id="team-details-title">{selectedTeam.name}</h2>
                 <p>{getTeamPokemonCount(selectedTeam)} de 6 Pokemon preenchidos</p>
               </div>
               <button
@@ -297,12 +279,11 @@ export default function Teams() {
             </div>
 
             <div className={styles.teamDetails}>
-              {selectedTeam.team_pokemon.map((pokemon, index) => (
-                pokemon && (
-                  <div key={index} className={styles.pokemonDetail}>
+              {getTeamPokemon(selectedTeam).map((pokemon) => (
+                  <div key={pokemon.id} className={styles.pokemonDetail}>
                     <div className={styles.pokemonHeader}>
                       <img
-                        src={pokemon.image_url || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.pokemon_id}.png`}
+                        src={getPokemonImage(pokemon)}
                         alt={pokemon.name}
                         className={styles.pokemonDetailImage}
                       />
@@ -316,12 +297,12 @@ export default function Teams() {
                     <div className={styles.pokemonStats}>
                       <h4>Stats Efetivos:</h4>
                       {(() => {
-                        const effectiveStats = calculateEffectiveStats(
-                          pokemon.base_stats,
-                          pokemon.level,
-                          pokemon.ivs,
-                          pokemon.evs
-                        );
+                        const effectiveStats = calculateEffectiveStats({
+                          stats: pokemon.base_stats,
+                          level: pokemon.level,
+                          ivs: pokemon.ivs,
+                          evs: pokemon.evs
+                        });
                         return (
                           <div className={styles.statsGrid}>
                             {Object.entries(effectiveStats).map(([stat, value]) => (
@@ -347,8 +328,8 @@ export default function Teams() {
                       <div className={styles.pokemonMoves}>
                         <h4>Movimentos:</h4>
                         <div className={styles.movesList}>
-                          {pokemon.moves.map((move, moveIndex) => (
-                            <span key={moveIndex} className={styles.moveTag}>{move}</span>
+                          {pokemon.moves.filter(Boolean).map((move) => (
+                            <span key={`${pokemon.id}-${move}`} className={styles.moveTag}>{move}</span>
                           ))}
                         </div>
                       </div>
@@ -365,7 +346,6 @@ export default function Teams() {
                       </div>
                     )}
                   </div>
-                )
               ))}
             </div>
 

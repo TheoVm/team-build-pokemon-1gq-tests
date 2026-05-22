@@ -384,6 +384,53 @@ export default function Builder() {
   }
 
   const selectedConfig = selectedPokemon ? normalizePokemonConfig(selectedPokemon) : null;
+  let pokemonSelectionContent;
+
+  if (selectedSlot === null) {
+    pokemonSelectionContent = (
+      <div className={styles.selectionPlaceholder}>
+        <h2>Configuracao do Pokemon</h2>
+        <p>Selecione um slot do time para iniciar a configuracao.</p>
+      </div>
+    );
+  } else if (!selectedPokemon) {
+    pokemonSelectionContent = (
+      <PokemonSearch
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        filteredPokemon={filteredPokemon}
+        selectedPokemon={selectedPokemon}
+        onPokemonSelect={handlePokemonSelect}
+      />
+    );
+  } else {
+    pokemonSelectionContent = (
+      <PokemonDetails
+        selectedPokemon={selectedPokemon}
+        level={selectedConfig?.level ?? DEFAULT_LEVEL}
+        moves={selectedConfig?.moves ?? [...DEFAULT_MOVES]}
+        ability={selectedConfig?.ability ?? ''}
+        item={selectedConfig?.item ?? ''}
+        ivs={selectedConfig?.ivs ?? { ...DEFAULT_IVS }}
+        evs={selectedConfig?.evs ?? { ...DEFAULT_EVS }}
+        movesList={selectedPokemon?.availableMoves ?? []}
+        abilitiesList={selectedPokemon?.abilities ?? []}
+        itemsList={itemsList}
+        onLevelChange={handleLevelChange}
+        onMoveChange={(moveIndex, value) => {
+          if (selectedSlot === null) return;
+          handleMoveChange(selectedSlot, moveIndex, value);
+        }}
+        onAbilityChange={handleAbilityChange}
+        onItemChange={handleItemChange}
+        onIvChange={handleIvChange}
+        onEvChange={handleEvChange}
+        calculateEffectiveStats={calculateEffectiveStats}
+        onClearPokemon={handleClearPokemon}
+        onChangePokemon={handleChangePokemon}
+      />
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -408,8 +455,9 @@ export default function Builder() {
 
         <div className={styles.teamSlots}>
           {team.map((pokemon, index) => (
-            <div
-              key={index}
+            <button
+              type="button"
+              key={`team-slot-${index + 1}`}
               onClick={() => handleSlotClick(index)}
               className={`${styles.slot} ${pokemon ? styles.slotFilled : ''} ${selectedSlot === index ? styles.slotActive : ''}`}
             >
@@ -428,51 +476,13 @@ export default function Builder() {
                   <span className={styles.slotEmptyText}>Adicionar</span>
                 </>
               )}
-            </div>
+            </button>
           ))}
         </div>
       </section>
 
       <section className={`${styles.panel} ${styles.selectionSection}`}>
-        {selectedSlot === null ? (
-          <div className={styles.selectionPlaceholder}>
-            <h2>Configuracao do Pokemon</h2>
-            <p>Selecione um slot do time para iniciar a configuracao.</p>
-          </div>
-        ) : !selectedPokemon ? (
-          <PokemonSearch
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            filteredPokemon={filteredPokemon}
-            selectedPokemon={selectedPokemon}
-            onPokemonSelect={handlePokemonSelect}
-          />
-        ) : (
-          <PokemonDetails
-            selectedPokemon={selectedPokemon}
-            level={selectedConfig?.level ?? DEFAULT_LEVEL}
-            moves={selectedConfig?.moves ?? [...DEFAULT_MOVES]}
-            ability={selectedConfig?.ability ?? ''}
-            item={selectedConfig?.item ?? ''}
-            ivs={selectedConfig?.ivs ?? { ...DEFAULT_IVS }}
-            evs={selectedConfig?.evs ?? { ...DEFAULT_EVS }}
-            movesList={selectedPokemon?.availableMoves ?? []}
-            abilitiesList={selectedPokemon?.abilities ?? []}
-            itemsList={itemsList}
-            onLevelChange={handleLevelChange}
-            onMoveChange={(moveIndex, value) => {
-              if (selectedSlot === null) return;
-              handleMoveChange(selectedSlot, moveIndex, value);
-            }}
-            onAbilityChange={handleAbilityChange}
-            onItemChange={handleItemChange}
-            onIvChange={handleIvChange}
-            onEvChange={handleEvChange}
-            calculateEffectiveStats={calculateEffectiveStats}
-            onClearPokemon={handleClearPokemon}
-            onChangePokemon={handleChangePokemon}
-          />
-        )}
+        {pokemonSelectionContent}
       </section>
 
       <aside className={styles.rightColumn}>

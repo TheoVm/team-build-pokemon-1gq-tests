@@ -22,7 +22,7 @@ jobs:
           cache-dependency-path: poketeams/package-lock.json
 
       - name: Instalar dependências
-        run: npm install
+        run: npm ci --ignore-scripts
         working-directory: poketeams
 
       - name: Rodar lint

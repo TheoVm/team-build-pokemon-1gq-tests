@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import styles from './PokemonDetails.module.css';
 
 const statLabels = {
@@ -8,6 +9,7 @@ const statLabels = {
   specialDefense: 'Defesa E',
   speed: 'Velocidade'
 };
+const moveSlots = ['move-1', 'move-2', 'move-3', 'move-4'];
 
 function getStatLabel(stat) {
   return statLabels[stat] || stat;
@@ -59,7 +61,7 @@ export default function PokemonDetails({
           <input
             type="number"
             value={level}
-            onChange={(e) => onLevelChange(parseInt(e.target.value) || 50)}
+            onChange={(e) => onLevelChange(Number.parseInt(e.target.value, 10) || 50)}
             min="1"
             max="100"
             className={styles.levelInput}
@@ -89,9 +91,9 @@ export default function PokemonDetails({
         <div className={`${styles.formCard} ${styles.movesSection}`}>
           <h4>Golpes</h4>
           <div className={styles.movesGrid}>
-            {Array(4).fill().map((_, i) => (
+            {moveSlots.map((slotKey, i) => (
               <select
-                key={i}
+                key={slotKey}
                 value={moves[i] || ''}
                 onChange={(e) => onMoveChange(i, e.target.value)}
                 className={styles.control}
@@ -148,7 +150,7 @@ export default function PokemonDetails({
                 <input
                   type="number"
                   value={ivs[stat]}
-                  onChange={(e) => onIvChange(stat, parseInt(e.target.value) || 0)}
+                  onChange={(e) => onIvChange(stat, Number.parseInt(e.target.value, 10) || 0)}
                   min="0"
                   max="31"
                   className={styles.input}
@@ -167,7 +169,7 @@ export default function PokemonDetails({
                 <input
                   type="number"
                   value={evs[stat]}
-                  onChange={(e) => onEvChange(stat, parseInt(e.target.value) || 0)}
+                  onChange={(e) => onEvChange(stat, Number.parseInt(e.target.value, 10) || 0)}
                   min="0"
                   max="255"
                   className={styles.input}
@@ -181,3 +183,39 @@ export default function PokemonDetails({
     </div>
   );
 }
+
+const statsShape = PropTypes.shape({
+  hp: PropTypes.number,
+  attack: PropTypes.number,
+  defense: PropTypes.number,
+  specialAttack: PropTypes.number,
+  specialDefense: PropTypes.number,
+  speed: PropTypes.number
+});
+
+PokemonDetails.propTypes = {
+  selectedPokemon: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    image: PropTypes.string,
+    types: PropTypes.arrayOf(PropTypes.string).isRequired,
+    stats: statsShape
+  }),
+  level: PropTypes.number.isRequired,
+  moves: PropTypes.arrayOf(PropTypes.string).isRequired,
+  ability: PropTypes.string.isRequired,
+  item: PropTypes.string.isRequired,
+  ivs: statsShape.isRequired,
+  evs: statsShape.isRequired,
+  movesList: PropTypes.arrayOf(PropTypes.string).isRequired,
+  abilitiesList: PropTypes.arrayOf(PropTypes.string).isRequired,
+  itemsList: PropTypes.arrayOf(PropTypes.string).isRequired,
+  onLevelChange: PropTypes.func.isRequired,
+  onMoveChange: PropTypes.func.isRequired,
+  onAbilityChange: PropTypes.func.isRequired,
+  onItemChange: PropTypes.func.isRequired,
+  onIvChange: PropTypes.func.isRequired,
+  onEvChange: PropTypes.func.isRequired,
+  calculateEffectiveStats: PropTypes.func.isRequired,
+  onClearPokemon: PropTypes.func.isRequired,
+  onChangePokemon: PropTypes.func.isRequired
+};

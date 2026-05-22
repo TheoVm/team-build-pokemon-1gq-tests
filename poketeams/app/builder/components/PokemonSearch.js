@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import styles from './PokemonSearch.module.css';
 
 export default function PokemonSearch({ searchTerm, onSearchChange, filteredPokemon, selectedPokemon, onPokemonSelect }) {
@@ -21,17 +22,33 @@ export default function PokemonSearch({ searchTerm, onSearchChange, filteredPoke
           const id = pokemon.url.split('/').filter(Boolean).pop();
           const imageUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
           return (
-            <div
+            <button
+              type="button"
               key={pokemon.name}
               onClick={() => onPokemonSelect(pokemon)}
               className={`${styles.pokemonItem} ${selectedPokemon?.name === pokemon.name ? styles.pokemonItemSelected : ''}`}
             >
               <img src={imageUrl} alt={pokemon.name} className={styles.pokemonImage} />
               <p className={styles.pokemonName}>{pokemon.name}</p>
-            </div>
+            </button>
           );
         })}
       </div>
     </div>
   );
 }
+
+PokemonSearch.propTypes = {
+  searchTerm: PropTypes.string.isRequired,
+  onSearchChange: PropTypes.func.isRequired,
+  filteredPokemon: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      url: PropTypes.string.isRequired
+    })
+  ).isRequired,
+  selectedPokemon: PropTypes.shape({
+    name: PropTypes.string
+  }),
+  onPokemonSelect: PropTypes.func.isRequired
+};
