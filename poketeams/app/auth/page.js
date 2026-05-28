@@ -28,7 +28,7 @@ const MODE_CONFIG = {
 
 const MIN_PASSWORD_LENGTH = 6;
 const MIN_DISPLAY_NAME_LENGTH = 3;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^(?=.{1,254}$)(?=.{1,64}@)[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
 function getFieldError(field, value, formData, mode) {
   const trimmedEmail = formData.email.trim();
